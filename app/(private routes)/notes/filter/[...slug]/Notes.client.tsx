@@ -57,10 +57,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
       <main className={css.mainContent}>
         {isLoading && <p className={css.loader}>Загрузка карточек...</p>}
         {isError && <p className={css.error}>Ошибка загрузки данных!</p>}
-        {!isLoading && !isError && notesList.length === 0 && (
-          <p className={css.empty}>Коллекция пустая или ничего не найдено.</p>
-        )}
-        {notesList.length > 0 && <NoteList page={page} tag={tag} />}
+        {!isLoading && !isError && <NoteList notes={notesList} />}
       </main>
     </div>
   );

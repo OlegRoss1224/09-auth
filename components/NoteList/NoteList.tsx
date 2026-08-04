@@ -1,28 +1,17 @@
 'use client';
 
 import Link from 'next/link';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchNotes, deleteNote } from '../../lib/api/clientApi';
-import type { Note } from '../../types/note';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { deleteNote } from '@/lib/api/clientApi';
+import type { Note } from '@/types/note';
 import css from './NoteList.module.css';
 
 interface NoteListProps {
-  search?: string;
-  page?: number;
-  tag?: string;
+  notes: Note[];
 }
 
-export const NoteList: React.FC<NoteListProps> = ({
-  search = '',
-  page = 1,
-  tag = 'all',
-}) => {
+export const NoteList: React.FC<NoteListProps> = ({ notes }) => {
   const queryClient = useQueryClient();
-
-  const { data, isLoading, error } = useQuery({
-    queryKey: ['notes', { search, page, tag }],
-    queryFn: () => fetchNotes(search, page, 12, tag),
-  });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => deleteNote(id),
@@ -30,26 +19,17 @@ export const NoteList: React.FC<NoteListProps> = ({
       queryClient.invalidateQueries({ queryKey: ['notes'] });
     },
     onError: error => {
-      console.error(
-        'Ошибка при удалении карточки через TanStack Query:',
-        error
-      );
+      console.error('Ошибка при удалении карточки:', error);
     },
   });
 
-  if (isLoading) return <div className={css.loading}>Загрузка заметок...</div>;
-  if (error)
-    return <div className={css.error}>Ошибка: {(error as Error).message}</div>;
-
-  const notesList: Note[] = data?.notes || (Array.isArray(data) ? data : []);
-
-  if (notesList.length === 0) {
-    return <p className={css.empty}>Нотаток не знайдено</p>;
+  if (!notes || notes.length === 0) {
+    return <p className={css.empty}>Заметки не найдены</p>;
   }
 
   return (
     <ul className={css.list}>
-      {notesList.map(({ id, title, content, tag }) => (
+      {notes.map(({ id, title, content, tag }) => (
         <li key={id} className={css.listItem}>
           <h2 className={css.title}>{title}</h2>
           <p className={css.content}>{content}</p>

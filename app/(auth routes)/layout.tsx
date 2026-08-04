@@ -1,14 +1,8 @@
 'use client';
 
-import { useQuery } from '@tanstack/react-query';
-import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-
-const fetchSession = async () => {
-  const response = await fetch('/api/auth/session');
-  if (!response.ok) return null;
-  return response.json();
-};
+import { useRouter } from 'next/navigation';
+import { useAuthStore } from '@/lib/store/authStore';
 
 export default function AuthLayout({
   children,
@@ -16,20 +10,15 @@ export default function AuthLayout({
   children: React.ReactNode;
 }) {
   const router = useRouter();
-
-  const { data: user, isLoading } = useQuery({
-    queryKey: ['session'],
-    queryFn: fetchSession,
-    retry: false,
-  });
+  const user = useAuthStore(state => state.user);
 
   useEffect(() => {
-    if (!isLoading && user) {
-      router.replace('/notes/filter/all');
-    }
-  }, [user, isLoading, router]);
+    router.refresh();
 
-  if (isLoading) return <div>Загрузка...</div>;
+    if (user) {
+      router.replace('/');
+    }
+  }, [router, user]);
 
   return <>{children}</>;
 }

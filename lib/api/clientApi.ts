@@ -18,6 +18,10 @@ export interface LoginData {
   password: string;
 }
 
+export interface UpdateUserPayload {
+  username: string;
+}
+
 export async function fetchNotes(
   search: string,
   page: number,
@@ -49,31 +53,30 @@ export async function deleteNote(id: string): Promise<Note> {
 }
 
 export async function register(data: RegisterData): Promise<User> {
-  const response = await axiosInstance.post('/auth/register', data);
+  const response = await axiosInstance.post<User>('/auth/register', data);
   return response.data;
 }
 
 export async function login(data: LoginData): Promise<User> {
-  const response = await axiosInstance.post('/auth/login', data);
+  const response = await axiosInstance.post<User>('/auth/login', data);
   return response.data;
 }
 
-export async function logout() {
-  const response = await axiosInstance.post('/auth/logout');
+export async function logout(): Promise<void> {
+  await axiosInstance.post('/auth/logout');
+}
+
+export async function checkSession(): Promise<User> {
+  const response = await axiosInstance.get<User>('/auth/session');
   return response.data;
 }
 
-export async function checkSession() {
-  const response = await axiosInstance.get('/auth/session');
+export async function getMe(): Promise<User> {
+  const response = await axiosInstance.get<User>('/users/me');
   return response.data;
 }
 
-export async function getMe() {
-  const response = await axiosInstance.get('/users/me');
-  return response.data;
-}
-
-export async function updateMe(data: Record<string, string>) {
-  const response = await axiosInstance.patch('/users/me', data);
+export async function updateMe(data: UpdateUserPayload): Promise<User> {
+  const response = await axiosInstance.patch<User>('/users/me', data);
   return response.data;
 }

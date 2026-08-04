@@ -1,4 +1,5 @@
 import { cookies } from 'next/headers';
+import { AxiosResponse } from 'axios';
 import { axiosInstance } from './api';
 import type { Note } from '../../types/note';
 import { FetchNotesResponse } from './clientApi';
@@ -41,8 +42,7 @@ export async function getMe() {
   return response.data;
 }
 
-export async function checkSession() {
-  const config = await getServerHeaders();
-  const response = await axiosInstance.get('/auth/session', config);
-  return response.data;
+export async function checkSession(): Promise<AxiosResponse<Note>> {
+  const response = await axiosInstance.get<Note>('/auth/session');
+  return response;
 }
