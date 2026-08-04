@@ -5,7 +5,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useRouter } from 'next/navigation';
 import { register } from '@/lib/api/clientApi';
 import { useAuthStore } from '@/lib/store/authStore';
-import css from './SignUp.module.css';
+import css from '@/components/SignUpPage/SignUpPage.module.css';
 
 export default function SignUpPage() {
   const router = useRouter();

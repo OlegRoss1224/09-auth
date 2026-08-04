@@ -1,5 +1,6 @@
 import React from 'react';
-import css from '../../../components/LayoutNotes/LayoutNotes.module.css';
+import css from '@/components/LayoutNotes/LayoutNotes.module.css';
+
 interface FilterLayoutProps {
   children: React.ReactNode;
   sidebar: React.ReactNode;

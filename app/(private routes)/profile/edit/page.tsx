@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { updateMe } from '@/lib/api/clientApi';
 import { useAuthStore } from '@/lib/store/authStore';
-import css from './EditProfilePage.module.css';
+import css from '@/components/EditProfilePage/EditProfilePage.module.css';
 
 export default function EditProfilePage() {
   const router = useRouter();
