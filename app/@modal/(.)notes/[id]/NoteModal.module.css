@@ -1,0 +1,14 @@
+.modalContent {
+  padding: 20px;
+}
+.title {
+  font-size: 24px;
+  margin-bottom: 10px;
+}
+.text {
+  font-size: 16px;
+  margin-bottom: 10px;
+}
+.tag {
+  color: blue;
+}
