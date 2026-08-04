@@ -60,7 +60,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
         {!isLoading && !isError && notesList.length === 0 && (
           <p className={css.empty}>Коллекция пустая или ничего не найдено.</p>
         )}
-        {notesList.length > 0 && <NoteList notes={notesList} />}
+        {notesList.length > 0 && <NoteList page={page} tag={tag} />}
       </main>
     </div>
   );
