@@ -1,5 +1,4 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { cookies } from 'next/headers';
 import { checkSession } from '@/lib/api/serverApi';
 
 const publicRoutes = ['/sign-in', '/sign-up'];
@@ -8,37 +7,55 @@ const privateRoutes = ['/profile', '/notes'];
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const cookieStore = await cookies();
-  const accessToken = cookieStore.get('accessToken')?.value;
-  const refreshToken = cookieStore.get('refreshToken')?.value;
+  const accessToken = request.cookies.get('accessToken')?.value;
+  const refreshToken = request.cookies.get('refreshToken')?.value;
 
   let isAuthenticated = Boolean(accessToken);
-  const response = NextResponse.next();
+  let response = NextResponse.next();
 
   if (!accessToken && refreshToken) {
     try {
       const sessionResponse = await checkSession();
-      const sessionData = sessionResponse.data;
 
-      if (sessionResponse.status === 200 && sessionData) {
+      if (sessionResponse.status === 200) {
         isAuthenticated = true;
 
-        if (sessionData.accessToken) {
-          cookieStore.set('accessToken', sessionData.accessToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
-          });
-        }
+        const setCookieHeader = sessionResponse.headers['set-cookie'];
 
-        if (sessionData.refreshToken) {
-          cookieStore.set('refreshToken', sessionData.refreshToken, {
-            httpOnly: true,
-            secure: process.env.NODE_ENV === 'production',
-            sameSite: 'lax',
-            path: '/',
+        if (setCookieHeader) {
+          const cookieStrings = Array.isArray(setCookieHeader)
+            ? setCookieHeader
+            : [setCookieHeader];
+
+          const requestHeaders = new Headers(request.headers);
+
+          cookieStrings.forEach(cookieStr => {
+            response.headers.append('set-cookie', cookieStr);
           });
+
+          const currentCookies = request.headers.get('cookie') || '';
+          const newCookies = response.cookies
+            .getAll()
+            .map(c => `${c.name}=${c.value}`)
+            .join('; ');
+
+          const combinedCookies = [currentCookies, newCookies]
+            .filter(Boolean)
+            .join('; ');
+
+          requestHeaders.set('cookie', combinedCookies);
+
+          const nextResponse = NextResponse.next({
+            request: {
+              headers: requestHeaders,
+            },
+          });
+
+          cookieStrings.forEach(cookieStr => {
+            nextResponse.headers.append('set-cookie', cookieStr);
+          });
+
+          response = nextResponse;
         }
       }
     } catch (error) {
