@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Image from 'next/image';
 import Link from 'next/link';
 import { getMe } from '@/lib/api/serverApi';
+export const dynamic = 'force-dynamic';
 import css from '@/components/ProfilePage/ProfilePage.module.css';
 
 export const metadata: Metadata = {
