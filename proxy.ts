@@ -11,6 +11,7 @@ export async function proxy(request: NextRequest) {
   const refreshToken = request.cookies.get('refreshToken')?.value;
 
   let isAuthenticated = Boolean(accessToken);
+
   let response = NextResponse.next();
 
   if (!accessToken && refreshToken) {
@@ -27,23 +28,27 @@ export async function proxy(request: NextRequest) {
             ? setCookieHeader
             : [setCookieHeader];
 
+          const tempRes = new NextResponse();
+          cookieStrings.forEach(c => tempRes.headers.append('set-cookie', c));
+
           const requestHeaders = new Headers(request.headers);
 
-          cookieStrings.forEach(cookieStr => {
-            response.headers.append('set-cookie', cookieStr);
+          tempRes.cookies.getAll().forEach(c => {
+            response.cookies.set(c.name, c.value, {
+              path: c.path ?? '/',
+              httpOnly: c.httpOnly ?? true,
+              secure: c.secure ?? process.env.NODE_ENV === 'production',
+              expires: c.expires,
+              maxAge: c.maxAge,
+            });
           });
 
-          const currentCookies = request.headers.get('cookie') || '';
-          const newCookies = response.cookies
+          const updatedCookies = response.cookies
             .getAll()
             .map(c => `${c.name}=${c.value}`)
             .join('; ');
 
-          const combinedCookies = [currentCookies, newCookies]
-            .filter(Boolean)
-            .join('; ');
-
-          requestHeaders.set('cookie', combinedCookies);
+          requestHeaders.set('cookie', updatedCookies);
 
           const nextResponse = NextResponse.next({
             request: {
@@ -51,8 +56,15 @@ export async function proxy(request: NextRequest) {
             },
           });
 
-          cookieStrings.forEach(cookieStr => {
-            nextResponse.headers.append('set-cookie', cookieStr);
+          response.cookies.getAll().forEach(c => {
+            nextResponse.cookies.set(c.name, c.value, {
+              path: c.path ?? '/',
+              httpOnly: c.httpOnly ?? true,
+              secure: c.secure ?? process.env.NODE_ENV === 'production',
+
+              expires: c.expires,
+              maxAge: c.maxAge,
+            });
           });
 
           response = nextResponse;
