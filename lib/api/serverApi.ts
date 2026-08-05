@@ -5,6 +5,12 @@ import type { Note } from '../../types/note';
 import type { User } from '../../types/user';
 import { FetchNotesResponse } from './clientApi';
 
+export interface SessionResponse {
+  user: User;
+  accessToken?: string;
+  refreshToken?: string;
+}
+
 async function getServerHeaders() {
   const cookieStore = await cookies();
   return {
@@ -38,11 +44,19 @@ export async function fetchNoteById(id: string): Promise<Note> {
 }
 
 export async function getMe(): Promise<User> {
-  const response = await axiosInstance.get<User>('/users/me');
+  const headers = await getServerHeaders();
+
+  const response = await axiosInstance.get<User>('/users/me', headers);
   return response.data;
 }
 
-export async function checkSession(): Promise<AxiosResponse<User>> {
-  const response = await axiosInstance.get<User>('/auth/session');
+export async function checkSession(): Promise<AxiosResponse<SessionResponse>> {
+  const headers = await getServerHeaders();
+
+  const response = await axiosInstance.get<SessionResponse>(
+    '/auth/session',
+    headers
+  );
+
   return response;
 }

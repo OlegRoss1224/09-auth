@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
 import { checkSession } from '@/lib/api/serverApi';
 
 const publicRoutes = ['/sign-in', '/sign-up'];
-
 const privateRoutes = ['/profile', '/notes'];
 
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const accessToken = request.cookies.get('accessToken')?.value;
-  const refreshToken = request.cookies.get('refreshToken')?.value;
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('accessToken')?.value;
+  const refreshToken = cookieStore.get('refreshToken')?.value;
 
   let isAuthenticated = Boolean(accessToken);
   const response = NextResponse.next();
@@ -18,23 +19,30 @@ export async function proxy(request: NextRequest) {
     try {
       const sessionResponse = await checkSession();
       const sessionData = sessionResponse.data;
-      const setCookieHeader = sessionResponse.headers['set-cookie'];
 
       if (sessionResponse.status === 200 && sessionData) {
         isAuthenticated = true;
 
-        if (setCookieHeader) {
-          if (Array.isArray(setCookieHeader)) {
-            setCookieHeader.forEach(cookie => {
-              response.headers.append('set-cookie', cookie);
-            });
-          } else {
-            response.headers.set('set-cookie', setCookieHeader);
-          }
+        if (sessionData.accessToken) {
+          cookieStore.set('accessToken', sessionData.accessToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+          });
+        }
+
+        if (sessionData.refreshToken) {
+          cookieStore.set('refreshToken', sessionData.refreshToken, {
+            httpOnly: true,
+            secure: process.env.NODE_ENV === 'production',
+            sameSite: 'lax',
+            path: '/',
+          });
         }
       }
     } catch (error) {
-      console.error('Помилка перевірки сесії:', error);
+      console.error('Помилка оновлення сесії у middleware:', error);
       isAuthenticated = false;
     }
   }
