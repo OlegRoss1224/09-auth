@@ -1,14 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { cookies } from 'next/headers';
+import { parseSetCookie } from 'cookie';
 import { checkSession } from '@/lib/api/serverApi';
-
-interface CookieOptions {
-  path?: string;
-  httpOnly?: boolean;
-  secure?: boolean;
-  sameSite?: 'lax' | 'strict' | 'none';
-  maxAge?: number;
-  expires?: Date;
-}
 
 const publicRoutes = ['/sign-in', '/sign-up'];
 const privateRoutes = ['/profile', '/notes'];
@@ -19,50 +12,14 @@ function isMatchingRoute(pathname: string, routes: string[]): boolean {
   );
 }
 
-function parseSetCookieHeader(cookieStr: string) {
-  const parts = cookieStr.split(';').map(p => p.trim());
-  const [nameValue, ...attributes] = parts;
-
-  const equalsIndex = nameValue.indexOf('=');
-  if (equalsIndex === -1) return null;
-
-  const name = nameValue.substring(0, equalsIndex).trim();
-  const value = nameValue.substring(equalsIndex + 1).trim();
-
-  const options: CookieOptions = {
-    path: '/',
-    httpOnly: true,
-    secure: process.env.NODE_ENV === 'production',
-    sameSite: 'lax',
-  };
-
-  attributes.forEach(attr => {
-    const [attrName, attrValue] = attr.split('=').map(s => s.trim());
-    const lowerName = attrName.toLowerCase();
-
-    if (lowerName === 'path') options.path = attrValue || '/';
-    if (lowerName === 'httponly') options.httpOnly = true;
-    if (lowerName === 'secure') options.secure = true;
-    if (lowerName === 'samesite') {
-      const lowerVal = attrValue?.toLowerCase();
-      if (lowerVal === 'lax' || lowerVal === 'strict' || lowerVal === 'none') {
-        options.sameSite = lowerVal;
-      }
-    }
-    if (lowerName === 'max-age') options.maxAge = Number(attrValue);
-    if (lowerName === 'expires') options.expires = new Date(attrValue);
-  });
-
-  return { name, value, options };
-}
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  const accessToken = request.cookies.get('accessToken')?.value;
-  const refreshToken = request.cookies.get('refreshToken')?.value;
+  const cookieStore = await cookies();
+  const accessToken = cookieStore.get('accessToken')?.value;
+  const refreshToken = cookieStore.get('refreshToken')?.value;
 
   let isAuthenticated = Boolean(accessToken);
-  const response = NextResponse.next();
 
   if (!accessToken && refreshToken) {
     try {
@@ -79,9 +36,17 @@ export async function proxy(request: NextRequest) {
             : [setCookieHeader];
 
           cookieStrings.forEach(cookieStr => {
-            const parsed = parseSetCookieHeader(cookieStr);
-            if (parsed) {
-              response.cookies.set(parsed.name, parsed.value, parsed.options);
+            const parsed = parseSetCookie(cookieStr);
+
+            if (parsed && parsed.name && parsed.value !== undefined) {
+              cookieStore.set(parsed.name, parsed.value, {
+                path: parsed.path ?? '/',
+                httpOnly: parsed.httpOnly ?? true,
+                secure: parsed.secure ?? process.env.NODE_ENV === 'production',
+
+                expires: parsed.expires,
+                maxAge: parsed.maxAge,
+              });
             }
           });
         }
@@ -103,7 +68,7 @@ export async function proxy(request: NextRequest) {
     return NextResponse.redirect(new URL('/sign-in', request.url));
   }
 
-  return response;
+  return NextResponse.next();
 }
 
 export const config = {
