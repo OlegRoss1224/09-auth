@@ -2,6 +2,7 @@ import { cookies } from 'next/headers';
 import { AxiosResponse } from 'axios';
 import { axiosInstance } from './api';
 import type { Note } from '../../types/note';
+import type { User } from '../../types/user';
 import { FetchNotesResponse } from './clientApi';
 
 async function getServerHeaders() {
@@ -36,13 +37,12 @@ export async function fetchNoteById(id: string): Promise<Note> {
   return response.data;
 }
 
-export async function getMe() {
-  const config = await getServerHeaders();
-  const response = await axiosInstance.get('/users/me', config);
+export async function getMe(): Promise<User> {
+  const response = await axiosInstance.get<User>('/users/me');
   return response.data;
 }
 
-export async function checkSession(): Promise<AxiosResponse<Note>> {
-  const response = await axiosInstance.get<Note>('/auth/session');
+export async function checkSession(): Promise<AxiosResponse<User>> {
+  const response = await axiosInstance.get<User>('/auth/session');
   return response;
 }
